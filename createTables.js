@@ -104,7 +104,7 @@ async function createTables() {
 
     } catch (error) {
         console.error("Database error:", error.message);
-        process.exitCode = 1;
+        throw error;
     } finally {
         if (connection) {
             await connection.end();
@@ -112,4 +112,10 @@ async function createTables() {
     }
 }
 
-createTables();
+if (require.main === module) {
+    createTables().catch(() => {
+        process.exitCode = 1;
+    });
+}
+
+module.exports = createTables;

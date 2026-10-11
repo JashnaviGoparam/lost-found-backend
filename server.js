@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 
 dotenv.config();
 
+const createTables = require("./createTables");
 const db = require("./database");
 
 const app = express();
@@ -823,9 +824,16 @@ io.on("connection", (socket) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-    console.log("----------------------------------");
-    console.log("Lost & Found Portal");
-    console.log(`Server running on port ${PORT}`);
-    console.log("----------------------------------");
-});
+createTables()
+    .then(() => {
+        server.listen(PORT, () => {
+            console.log("----------------------------------");
+            console.log("Lost & Found Portal");
+            console.log(`Server running on port ${PORT}`);
+            console.log("----------------------------------");
+        });
+    })
+    .catch(() => {
+        console.error("Database schema initialization failed; server will not start.");
+        process.exitCode = 1;
+    });
