@@ -16,7 +16,7 @@ async function createTables() {
                 : undefined
         });
 
-        console.log("Connected to Railway MySQL!");
+        console.log("Connected to MySQL!");
 
         await connection.query(
             "CREATE TABLE IF NOT EXISTS users (" +
@@ -29,6 +29,16 @@ async function createTables() {
             "password VARCHAR(255) NOT NULL, " +
             "role ENUM('student', 'admin') DEFAULT 'student', " +
             "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+        );
+
+        await connection.query(
+            "CREATE TABLE IF NOT EXISTS password_resets (" +
+            "id INT AUTO_INCREMENT PRIMARY KEY, " +
+            "user_id INT NOT NULL, " +
+            "token_hash CHAR(64) NOT NULL UNIQUE, " +
+            "expires_at DATETIME NOT NULL, " +
+            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+            "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)"
         );
 
         await connection.query(
@@ -47,6 +57,19 @@ async function createTables() {
             "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
             "FOREIGN KEY (user_id) REFERENCES users(id))"
         );
+
+        for (const column of ["color", "brand"]) {
+            const [existingColumn] = await connection.query(
+                "SHOW COLUMNS FROM items LIKE ?",
+                [column]
+            );
+
+            if (existingColumn.length === 0) {
+                await connection.query(
+                    `ALTER TABLE items ADD COLUMN ${column} VARCHAR(100) NULL`
+                );
+            }
+        }
 
         await connection.query(
             "CREATE TABLE IF NOT EXISTS notifications (" +
@@ -81,6 +104,7 @@ async function createTables() {
 
     } catch (error) {
         console.error("Database error:", error.message);
+        process.exitCode = 1;
     } finally {
         if (connection) {
             await connection.end();
@@ -89,4 +113,3 @@ async function createTables() {
 }
 
 createTables();
-
